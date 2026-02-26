@@ -1,38 +1,27 @@
-import { useState, useEffect } from "react";
-import { BookOpen, MessageCircle, Heart } from "lucide-react";
+import { useState } from "react";
+import { BookOpen, Plus, Heart, Pin, X } from "lucide-react";
 import { Link } from "react-router-dom";
-
-interface Note {
-  id: string;
-  text: string;
-  date: string;
-  likes: number;
-}
+import { useNotes } from "@/hooks/useNotes";
+import { toast } from "@/hooks/use-toast";
 
 export default function NotebookPreviewCard() {
-  const [quickNote, setQuickNote] = useState("");
-  const [notes, setNotes] = useState<Note[]>(() => {
-    const saved = localStorage.getItem("quickNotes");
-    return saved
-      ? JSON.parse(saved)
-      : [
-          { id: "1", text: "Design system colors need updating for Q2 rebrand", date: "Today", likes: 3 },
-          { id: "2", text: "Look into new charting library options", date: "Yesterday", likes: 1 },
-        ];
-  });
+  const { notes, addNote } = useNotes();
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem("quickNotes", JSON.stringify(notes));
-  }, [notes]);
-
-  const addNote = () => {
-    if (!quickNote.trim()) return;
-    setNotes((prev) => [
-      { id: Date.now().toString(), text: quickNote, date: "Just now", likes: 0 },
-      ...prev,
-    ]);
-    setQuickNote("");
+  const handleAdd = () => {
+    if (!title.trim()) return;
+    addNote(title, content);
+    toast({ title: "Note saved", description: title });
+    setTitle("");
+    setContent("");
+    setAdding(false);
   };
+
+  const latestNotes = [...notes]
+    .sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1))
+    .slice(0, 3);
 
   return (
     <div className="dashboard-card animate-fade-in">
@@ -41,40 +30,71 @@ export default function NotebookPreviewCard() {
           <BookOpen className="w-4 h-4 text-primary" />
           Notebook
         </h3>
-        <Link to="/notebook" className="text-xs text-primary hover:underline">
-          View all
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAdding(true)}
+            className="text-primary hover:text-primary/80 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+          <Link to="/notebook" className="text-xs text-primary hover:underline">
+            View all
+          </Link>
+        </div>
       </div>
 
-      {/* Quick note input */}
-      <div className="mb-4">
-        <input
-          className="w-full bg-muted border-none rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="What's on your mind?"
-          value={quickNote}
-          onChange={(e) => setQuickNote(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addNote()}
-        />
-      </div>
+      {/* Quick add note */}
+      {adding && (
+        <div className="mb-4 p-3 rounded-lg bg-muted space-y-2">
+          <input
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            placeholder="Note title..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autoFocus
+          />
+          <input
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            placeholder="What's on your mind?"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          />
+          <div className="flex gap-2">
+            <button onClick={handleAdd} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Save</button>
+            <button onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-sm">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {!adding && (
+        <div className="mb-4">
+          <input
+            className="w-full bg-muted border-none rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            placeholder="What's on your mind?"
+            onFocus={() => setAdding(true)}
+            readOnly
+          />
+        </div>
+      )}
 
       {/* Recent notes */}
       <div className="space-y-3">
-        {notes.slice(0, 3).map((note) => (
-          <div key={note.id} className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-            <p className="text-sm text-foreground line-clamp-2">{note.text}</p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-muted-foreground">{note.date}</span>
-              <div className="flex items-center gap-3">
-                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-                  <Heart className="w-3.5 h-3.5" />
-                  {note.likes}
-                </button>
-                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-                  <MessageCircle className="w-3.5 h-3.5" />
-                </button>
-              </div>
+        {latestNotes.map((note) => (
+          <Link key={note.id} to="/notebook" className="block p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+            <div className="flex items-center gap-1.5 mb-1">
+              {note.pinned && <Pin className="w-3 h-3 text-primary" />}
+              <p className="text-sm font-medium text-foreground line-clamp-1">{note.title}</p>
             </div>
-          </div>
+            <p className="text-xs text-muted-foreground line-clamp-1">{note.content}</p>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-muted-foreground">{note.createdAt}</span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Heart className="w-3 h-3" />
+                {note.likes}
+              </span>
+            </div>
+          </Link>
         ))}
       </div>
     </div>
