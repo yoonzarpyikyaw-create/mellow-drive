@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { Bell, Plus, X, Clock } from "lucide-react";
+import { useState } from "react";
+import { Bell, Plus, X, Clock, Edit3 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "@/hooks/use-toast";
 
 interface Reminder {
   id: string;
@@ -10,43 +11,53 @@ interface Reminder {
 }
 
 const defaultReminders: Reminder[] = [
-  { id: "1", text: "Team standup", time: "09:00 AM", enabled: true },
-  { id: "2", text: "Submit report", time: "02:00 PM", enabled: true },
-  { id: "3", text: "Call client", time: "04:30 PM", enabled: false },
+  { id: "1", text: "Team standup", time: "09:00", enabled: true },
+  { id: "2", text: "Submit report", time: "14:00", enabled: true },
+  { id: "3", text: "Call client", time: "16:30", enabled: false },
 ];
 
+function loadReminders(): Reminder[] {
+  const saved = localStorage.getItem("reminders");
+  return saved ? JSON.parse(saved) : defaultReminders;
+}
+
 export default function RemindersCard() {
-  const [reminders, setReminders] = useState<Reminder[]>(() => {
-    const saved = localStorage.getItem("reminders");
-    return saved ? JSON.parse(saved) : defaultReminders;
-  });
+  const [reminders, setReminders] = useState<Reminder[]>(loadReminders);
   const [adding, setAdding] = useState(false);
   const [newText, setNewText] = useState("");
   const [newTime, setNewTime] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    localStorage.setItem("reminders", JSON.stringify(reminders));
-  }, [reminders]);
+  const save = (updated: Reminder[]) => {
+    setReminders(updated);
+    localStorage.setItem("reminders", JSON.stringify(updated));
+  };
 
   const toggleReminder = (id: string) => {
-    setReminders((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r))
-    );
+    save(reminders.map((r) => (r.id === id ? { ...r, enabled: !r.enabled } : r)));
   };
 
   const addReminder = () => {
     if (!newText.trim()) return;
-    setReminders((prev) => [
-      ...prev,
-      { id: Date.now().toString(), text: newText, time: newTime || "12:00 PM", enabled: true },
-    ]);
+    save([...reminders, { id: Date.now().toString(), text: newText, time: newTime || "12:00", enabled: true }]);
+    toast({ title: "Reminder added", description: newText });
     setNewText("");
     setNewTime("");
     setAdding(false);
   };
 
   const removeReminder = (id: string) => {
-    setReminders((prev) => prev.filter((r) => r.id !== id));
+    save(reminders.filter((r) => r.id !== id));
+    toast({ title: "Reminder removed" });
+  };
+
+  const formatTime = (time: string) => {
+    if (!time) return "";
+    const [h, m] = time.split(":");
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const h12 = hour % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
   };
 
   return (
@@ -65,7 +76,7 @@ export default function RemindersCard() {
       </div>
 
       {adding && (
-        <div className="flex flex-col gap-2 mb-4 p-3 rounded-lg bg-muted">
+        <div className="flex flex-col gap-2 mb-4 p-3 rounded-lg bg-muted animate-fade-in">
           <input
             className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="Reminder text..."
@@ -81,29 +92,20 @@ export default function RemindersCard() {
               value={newTime}
               onChange={(e) => setNewTime(e.target.value)}
             />
-            <button onClick={addReminder} className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-              Add
-            </button>
-            <button onClick={() => setAdding(false)} className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm">
-              Cancel
-            </button>
+            <button onClick={addReminder} className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Add</button>
+            <button onClick={() => setAdding(false)} className="px-3 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm">Cancel</button>
           </div>
         </div>
       )}
 
       <ul className="space-y-2">
         {reminders.map((r) => (
-          <li
-            key={r.id}
-            className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted transition-colors group"
-          >
+          <li key={r.id} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-muted transition-colors group">
             <div className="flex-1 min-w-0">
-              <p className={`text-sm truncate ${r.enabled ? "text-foreground" : "text-muted-foreground"}`}>
-                {r.text}
-              </p>
+              <p className={`text-sm truncate ${r.enabled ? "text-foreground" : "text-muted-foreground"}`}>{r.text}</p>
               <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                 <Clock className="w-3 h-3" />
-                {r.time}
+                {formatTime(r.time)}
               </p>
             </div>
             <Switch checked={r.enabled} onCheckedChange={() => toggleReminder(r.id)} />

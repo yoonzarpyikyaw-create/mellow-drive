@@ -1,10 +1,13 @@
-import { Settings as SettingsIcon, User, Bell, Palette } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Settings as SettingsIcon, User, Bell, Palette, Moon, Sun } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
+import { useDarkMode } from "@/hooks/useDarkMode";
+import { toast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true);
   const [emailDigest, setEmailDigest] = useState(false);
+  const { dark, toggle } = useDarkMode();
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -70,7 +73,27 @@ export default function SettingsPage() {
             <Palette className="w-4 h-4" />
             Appearance
           </h3>
-          <p className="text-sm text-muted-foreground">Theme customization coming soon.</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {dark ? <Moon className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-warning" />}
+              <div>
+                <p className="text-sm font-medium text-foreground">Dark Mode</p>
+                <p className="text-xs text-muted-foreground">Toggle between light and dark theme</p>
+              </div>
+            </div>
+            <Switch
+              checked={dark}
+              onCheckedChange={() => {
+                toggle();
+                toast({ title: dark ? "Light mode enabled" : "Dark mode enabled" });
+              }}
+            />
+          </div>
+          <div className="mt-4 p-3 rounded-lg bg-muted">
+            <p className="text-xs text-muted-foreground">
+              <strong>Keyboard shortcuts:</strong> Press <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">T</kbd> for new task, <kbd className="px-1.5 py-0.5 bg-card border border-border rounded text-xs">N</kbd> for new note (when not typing)
+            </p>
+          </div>
         </div>
       </div>
     </div>
