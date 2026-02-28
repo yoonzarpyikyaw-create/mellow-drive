@@ -1,5 +1,5 @@
 import { useState, createContext, useContext } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -10,7 +10,9 @@ import {
   Menu,
   X,
   Zap,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -27,6 +29,20 @@ const navItems = [
   { to: "/notebook", icon: BookOpen, label: "Notebook" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
 ];
+
+function LogoutButton({ onClose }: { onClose: () => void }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => { logout(); onClose(); navigate("/login", { replace: true }); }}
+      className="sidebar-link w-full"
+    >
+      <LogOut className="w-5 h-5 flex-shrink-0" />
+      <span>Logout</span>
+    </button>
+  );
+}
 
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
@@ -78,8 +94,8 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           ))}
         </nav>
 
-        {/* Settings at bottom */}
-        <div className="px-3 pb-4">
+        {/* Settings + Logout at bottom */}
+        <div className="px-3 pb-4 space-y-1">
           <NavLink
             to="/settings"
             onClick={onClose}
@@ -90,6 +106,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             <Settings className="w-5 h-5 flex-shrink-0" />
             <span>Settings</span>
           </NavLink>
+          <LogoutButton onClose={onClose} />
         </div>
       </aside>
     </>
