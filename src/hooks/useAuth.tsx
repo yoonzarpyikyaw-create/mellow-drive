@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
+  login: (username: string, password: string) => boolean;
   logout: () => void;
 }
 
@@ -14,8 +14,8 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-const VALID_EMAIL = "admin@example.com";
-const VALID_PASSWORD = "password123";
+const VALID_USERNAME = "kyawkyaw";
+const VALID_PASSWORD = "kyawkyaw@todolist";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -26,8 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("productiv_auth", String(isAuthenticated));
   }, [isAuthenticated]);
 
-  const login = (email: string, password: string) => {
-    if (email === VALID_EMAIL && password === VALID_PASSWORD) {
+  const login = (username: string, password: string) => {
+    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
       setIsAuthenticated(true);
       return true;
     }
